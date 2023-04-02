@@ -1,0 +1,74 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Chat</title>
+</head>
+<body>
+    <div id="chatForm">
+        <label>Name</label>
+        <input type="text" id="name" /><br /><br />
+        <label>Age</label>
+        <input type="number" id="age" /><br /><br />
+        <label>Message</label>
+        <input type="text" id="message" />
+        <input type="button" id="btnSend" value="Send" disabled="disabled" />
+    </div>
+    <div id="chatroom"></div>
+
+    <!--script src="js\microsoft\signalr\dist\browser\signalr.min.js"></script-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.js"></script>
+    <script>
+        // подключение к хабу
+        let hubConnection = new signalR.HubConnectionBuilder().withUrl("/chat").build();
+
+        let btnSend = document.getElementById("btnSend");
+        btnSend.addEventListener("click", function () {
+            let username = document.getElementById("name").value;
+            let userage = document.getElementById("age").value;
+            let message = document.getElementById("message").value;
+
+            hubConnection.invoke("Send", { "name": username, "age": parseInt(userage) }, message)
+                         .catch(function (e) {
+                return console.error(e.toString());
+            });
+        });
+
+        hubConnection.on("Receive", function (user, message) {
+            let ageI = document.createElement("i");
+            ageI.textContent = `(${user.age}) `;
+
+            let nameB = document.createElement("b");
+            nameB.textContent = `${user.name} `;
+
+            let messageE = document.createElement("span");
+            messageE.textContent = message;
+
+            let elemP = document.createElement("p");
+            elemP.appendChild(nameB);
+            elemP.appendChild(ageI);
+            elemP.appendChild(messageE);
+
+            document.getElementById("chatroom").appendChild(elemP);
+        });
+
+        hubConnection.on("Notify", function (message) {
+            let notifyB = document.createElement("b");
+            notifyB.textContent = message;
+            let elemP = document.createElement("p");
+            elemP.appendChild(notifyB);
+            let firstChat = document.getElementById("chatroom").firstChild;
+            document.getElementById("chatroom").insertBefore(elemP, firstChat);
+        });
+
+        hubConnection.start()
+            .then(function () {
+                document.getElementById("btnSend").disabled = false;
+            })
+            .catch(function (e) {
+                return console.error(e.toString());
+            });
+
+    </script>
+</body>
+</html>
